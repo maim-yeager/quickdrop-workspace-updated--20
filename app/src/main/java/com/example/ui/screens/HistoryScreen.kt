@@ -53,6 +53,7 @@ import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 enum class HistoryTab { ALL, SENT, RECEIVED }
 
@@ -156,7 +157,7 @@ fun HistoryScreen(
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = null,
-                            tint = Color(0x55FFFFFF),
+                            tint = TextTertiary,
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -194,13 +195,14 @@ private fun HistoryTabButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = quickDropColors()
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(if (isSelected) Color(0x332979FF) else Color(0x1F1E293B))
+            .background(if (isSelected) Color(0x332979FF) else colors.glassSurface)
             .border(
                 1.dp,
-                if (isSelected) NeonCyan else Color(0x22FFFFFF),
+                if (isSelected) NeonCyan else colors.glassBorder,
                 RoundedCornerShape(14.dp)
             )
             .clickable { onClick() }
@@ -221,11 +223,12 @@ private fun HistoryCardItem(
     item: TransferEntity,
     onDelete: () -> Unit
 ) {
+    val colors = quickDropColors()
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        backgroundColor = Color(0x2E1E293B),
-        borderColor = Color(0x33FFFFFF)
+        backgroundColor = colors.glassSurface,
+        borderColor = colors.glassBorder
     ) {
         Row(
             modifier = Modifier

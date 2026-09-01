@@ -32,12 +32,14 @@ import com.example.ui.theme.GlassDarkBackground
 import com.example.ui.theme.NeonCyan
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun PrivacyPolicyScreen(
     onBackClick: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val colors = quickDropColors()
 
     Box(
         modifier = Modifier
@@ -76,8 +78,8 @@ fun PrivacyPolicyScreen(
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                backgroundColor = Color(0x331E293B),
-                borderColor = Color(0x5500F0FF)
+                backgroundColor = colors.glassSurface,
+                borderColor = if (colors.isDark) Color(0x5500F0FF) else Color(0x4400B8CC)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Text(
@@ -150,12 +152,13 @@ fun PrivacyPolicyScreen(
 
 @Composable
 private fun PolicyItem(title: String, content: String) {
+    val colors = quickDropColors()
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         shape = RoundedCornerShape(18.dp),
-        backgroundColor = Color(0x1F1E293B)
+        backgroundColor = colors.glassSurface
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

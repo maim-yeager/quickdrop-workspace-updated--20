@@ -63,6 +63,7 @@ import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun HomeScreen(
@@ -72,6 +73,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val colors = quickDropColors()
 
     val infiniteTransition = rememberInfiniteTransition(label = "HomeOrbGlow")
     val glowPulse by infiniteTransition.animateFloat(
@@ -190,8 +192,8 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .height(180.dp),
                 shape = RoundedCornerShape(28.dp),
-                backgroundColor = Color(0x2E16294D),
-                borderColor = Color(0x664364F7),
+                backgroundColor = if (colors.isDark) Color(0x2E16294D) else Color(0x1A4364F7),
+                borderColor = if (colors.isDark) Color(0x664364F7) else Color(0x554364F7),
                 onClick = onSendClick
             ) {
                 Row(
@@ -271,8 +273,8 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .height(180.dp),
                 shape = RoundedCornerShape(28.dp),
-                backgroundColor = Color(0x2E113B30),
-                borderColor = Color(0x660BA360),
+                backgroundColor = if (colors.isDark) Color(0x2E113B30) else Color(0x1A0BA360),
+                borderColor = if (colors.isDark) Color(0x660BA360) else Color(0x550BA360),
                 onClick = onReceiveClick
             ) {
                 Row(
@@ -384,8 +386,8 @@ fun HomeScreen(
         ) {
             GlassCard(
                 shape = RoundedCornerShape(32.dp),
-                backgroundColor = Color(0x800F172A),
-                borderColor = Color(0x44FFFFFF)
+                backgroundColor = colors.glassSurfaceStrong,
+                borderColor = colors.glassBorder
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
@@ -444,8 +446,7 @@ private fun FeaturePill(
 ) {
     GlassCard(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        backgroundColor = Color(0x1F1E293B)
+        shape = RoundedCornerShape(18.dp)
     ) {
         Column(
             modifier = Modifier

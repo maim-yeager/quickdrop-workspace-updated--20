@@ -54,6 +54,7 @@ import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun NearbyDevicesScreen(
@@ -155,6 +156,7 @@ private fun DeviceCardItem(
     device: NearbyDevice,
     onClick: () -> Unit
 ) {
+    val colors = quickDropColors()
     val icon: ImageVector = when {
         device.deviceName.contains("iPhone", true) -> Icons.Default.PhoneIphone
         device.deviceName.contains("iPad", true) || device.deviceType == DeviceType.TABLET -> Icons.Default.TabletMac
@@ -166,8 +168,8 @@ private fun DeviceCardItem(
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        backgroundColor = Color(0x331E293B),
-        borderColor = Color(0x4400F0FF),
+        backgroundColor = colors.glassSurface,
+        borderColor = if (colors.isDark) Color(0x4400F0FF) else Color(0x3300B8CC),
         onClick = onClick
     ) {
         Row(

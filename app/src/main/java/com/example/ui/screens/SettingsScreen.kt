@@ -118,10 +118,10 @@ fun SettingsScreen(
                     colors = TextFieldDefaults.colors(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary,
-                        focusedContainerColor = Color(0x331E293B),
-                        unfocusedContainerColor = Color(0x331E293B),
+                        focusedContainerColor = colors.glassSurface,
+                        unfocusedContainerColor = colors.glassSurface,
                         focusedIndicatorColor = NeonCyan,
-                        unfocusedIndicatorColor = Color(0x44FFFFFF)
+                        unfocusedIndicatorColor = colors.glassBorder
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -244,8 +244,8 @@ fun SettingsScreen(
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                backgroundColor = Color(0x331E293B),
-                borderColor = Color(0x4400F0FF)
+                backgroundColor = colors.glassSurface,
+                borderColor = if (colors.isDark) Color(0x4400F0FF) else Color(0x3300B8CC)
             ) {
                 Row(
                     modifier = Modifier
@@ -299,7 +299,7 @@ fun SettingsScreen(
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                backgroundColor = Color(0x221E293B)
+                backgroundColor = colors.glassSurface
             ) {
                 Column {
                     SettingsRowItem(
@@ -368,8 +368,8 @@ fun SettingsScreen(
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = Color.White,
                                 checkedTrackColor = NeonCyan,
-                                uncheckedThumbColor = Color(0xFF94A3B8),
-                                uncheckedTrackColor = Color(0xFF334155)
+                                uncheckedThumbColor = colors.textTertiary,
+                                uncheckedTrackColor = colors.glassSurfaceStrong
                             )
                         )
                     }
@@ -384,7 +384,7 @@ fun SettingsScreen(
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                backgroundColor = Color(0x221E293B)
+                backgroundColor = colors.glassSurface
             ) {
                 Column {
                     SettingsRowItem(
@@ -416,7 +416,7 @@ fun SettingsScreen(
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                backgroundColor = Color(0x221E293B)
+                backgroundColor = colors.glassSurface
             ) {
                 Column {
                     SettingsRowItem(
@@ -468,11 +468,12 @@ private fun SectionHeader(title: String) {
 
 @Composable
 private fun SettingsDivider() {
+    val colors = quickDropColors()
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(1.dp)
-            .background(Color(0x1AFFFFFF))
+            .background(colors.glassBorder)
     )
 }
 
@@ -531,6 +532,7 @@ private fun SettingsRowItem(
 private fun StorageUsageRow(
     storageUsage: StorageUsageInfo
 ) {
+    val colors = quickDropColors()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -603,8 +605,8 @@ private fun StorageUsageRow(
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(Color(0x331E293B))
-                .border(0.75.dp, Color(0x22FFFFFF), RoundedCornerShape(3.dp))
+                .background(colors.glassSurface)
+                .border(0.75.dp, colors.glassBorder, RoundedCornerShape(3.dp))
         ) {
             Box(
                 modifier = Modifier

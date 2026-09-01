@@ -52,12 +52,14 @@ import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun AboutScreen(
     onBackClick: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val colors = quickDropColors()
 
     Box(
         modifier = Modifier
@@ -155,8 +157,8 @@ fun AboutScreen(
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
-                backgroundColor = Color(0x2E1E293B),
-                borderColor = Color(0x4400F0FF)
+                backgroundColor = colors.glassSurface,
+                borderColor = if (colors.isDark) Color(0x4400F0FF) else Color(0x3300B8CC)
             ) {
                 Column(
                     modifier = Modifier.padding(18.dp),

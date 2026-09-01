@@ -47,6 +47,7 @@ import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun SelectedFilesScreen(
@@ -57,6 +58,7 @@ fun SelectedFilesScreen(
     onBackClick: () -> Unit,
     onSendClick: () -> Unit
 ) {
+    val colors = quickDropColors()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -105,8 +107,8 @@ fun SelectedFilesScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(20.dp),
-                backgroundColor = Color(0x331E293B),
-                borderColor = Color(0x5500F0FF)
+                backgroundColor = colors.glassSurfaceStrong,
+                borderColor = if (colors.isDark) Color(0x5500F0FF) else Color(0x4400B8CC)
             ) {
                 Row(
                     modifier = Modifier
@@ -200,7 +202,7 @@ fun SelectedFilesScreen(
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
-                        backgroundColor = Color(0x221E293B)
+                        backgroundColor = colors.glassSurface
                     ) {
                         Row(
                             modifier = Modifier

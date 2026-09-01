@@ -38,12 +38,14 @@ import com.example.ui.theme.NeonPurple
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun ReceiveWaitingScreen(
     localDeviceName: String,
     onBackClick: () -> Unit
 ) {
+    val colors = quickDropColors()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -113,7 +115,7 @@ fun ReceiveWaitingScreen(
                 // Device Discoverable Name Pill
                 GlassCard(
                     shape = RoundedCornerShape(16.dp),
-                    backgroundColor = Color(0x331E293B)
+                    backgroundColor = colors.glassSurface
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -144,7 +146,7 @@ fun ReceiveWaitingScreen(
                     onClick = onBackClick,
                     icon = Icons.Default.Close,
                     gradientBrush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        listOf(Color(0x331E293B), Color(0x44334155))
+                        listOf(colors.glassSurface, colors.glassSurfaceStrong)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )

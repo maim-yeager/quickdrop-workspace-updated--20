@@ -59,6 +59,7 @@ import com.example.ui.theme.NeonGreen
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
 import com.example.ui.theme.TextTertiary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun SendFilePickerScreen(
@@ -83,6 +84,7 @@ fun SendFilePickerScreen(
     }
 
     val selectedCount = selectedFiles.size
+    val colors = quickDropColors()
 
     Box(
         modifier = Modifier
@@ -155,10 +157,10 @@ fun SendFilePickerScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (isSelected) cat.color.copy(alpha = 0.35f) else Color(0x1F1E293B))
+                            .background(if (isSelected) cat.color.copy(alpha = 0.35f) else colors.glassSurface)
                             .border(
                                 1.dp,
-                                if (isSelected) cat.color else Color(0x22FFFFFF),
+                                if (isSelected) cat.color else colors.glassBorder,
                                 RoundedCornerShape(14.dp)
                             )
                             .clickable { onCategorySelected(cat) }
@@ -301,8 +303,8 @@ fun SendFilePickerScreen(
         ) {
             GlassCard(
                 shape = RoundedCornerShape(24.dp),
-                backgroundColor = Color(0xD90F172A),
-                borderColor = Color(0x6600F0FF)
+                backgroundColor = colors.glassSurfaceStrong,
+                borderColor = if (colors.isDark) Color(0x6600F0FF) else Color(0x5500B8CC)
             ) {
                 Row(
                     modifier = Modifier
@@ -343,11 +345,12 @@ private fun FileItemRow(
     isSelected: Boolean,
     onToggle: () -> Unit
 ) {
+    val colors = quickDropColors()
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        backgroundColor = if (isSelected) Color(0x382979FF) else Color(0x1F1A233F),
-        borderColor = if (isSelected) NeonCyan else Color(0x22FFFFFF),
+        backgroundColor = if (isSelected) Color(0x382979FF) else colors.glassSurface,
+        borderColor = if (isSelected) NeonCyan else colors.glassBorder,
         onClick = onToggle
     ) {
         Row(
@@ -396,10 +399,10 @@ private fun FileItemRow(
                 modifier = Modifier
                     .size(26.dp)
                     .clip(CircleShape)
-                    .background(if (isSelected) NeonGreen else Color(0x22FFFFFF))
+                    .background(if (isSelected) NeonGreen else colors.glassSurface)
                     .border(
                         width = 1.2.dp,
-                        color = if (isSelected) NeonGreen else Color(0x55FFFFFF),
+                        color = if (isSelected) NeonGreen else colors.glassBorder,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center

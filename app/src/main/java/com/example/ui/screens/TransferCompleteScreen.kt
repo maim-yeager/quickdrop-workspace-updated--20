@@ -30,6 +30,7 @@ import com.example.ui.theme.GlassDarkBackground
 import com.example.ui.theme.NeonGreen
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
+import com.example.ui.theme.quickDropColors
 
 @Composable
 fun TransferCompleteScreen(
@@ -38,6 +39,7 @@ fun TransferCompleteScreen(
     onViewHistoryClick: () -> Unit
 ) {
     val completed = transferState as? TransferState.Completed
+    val colors = quickDropColors()
     val fileCount = completed?.fileCount ?: 0
     val totalFormatted = completed?.formattedTotal ?: "0 B"
     val isOutgoing = completed?.isOutgoing ?: true
@@ -108,7 +110,7 @@ fun TransferCompleteScreen(
                     onClick = onViewHistoryClick,
                     icon = Icons.Default.History,
                     gradientBrush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        listOf(Color(0x331E293B), Color(0x55334155))
+                        listOf(colors.glassSurface, colors.glassSurfaceStrong)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
