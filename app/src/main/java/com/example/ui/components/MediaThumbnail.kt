@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.example.data.model.FileCategory
 import com.example.data.model.SharedFile
@@ -120,7 +120,7 @@ fun MediaThumbnail(
     ) {
         when {
             file.category == FileCategory.IMAGE -> {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = imageRequest,
                     contentDescription = file.name,
                     modifier = Modifier.fillMaxSize(),

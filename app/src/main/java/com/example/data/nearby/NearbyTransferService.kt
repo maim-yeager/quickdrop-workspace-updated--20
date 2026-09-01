@@ -362,9 +362,8 @@ class NearbyTransferService(
                 val uri: Uri? = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 if (uri != null) {
                     resolver.openOutputStream(uri)?.use { out ->
-                        pfd.fileDescriptor.let { fd ->
-                            val input = ParcelFileDescriptor.AutoCloseInputStream(fd)
-                            input.use { inputStream -> inputStream.copyTo(out) }
+                        ParcelFileDescriptor.AutoCloseInputStream(pfd).use { inputStream ->
+                            inputStream.copyTo(out)
                         }
                     }
                     values.clear()
@@ -379,8 +378,9 @@ class NearbyTransferService(
                 }
                 val target = File(qdFolder, fileName)
                 FileOutputStream(target).use { out ->
-                    val input = ParcelFileDescriptor.AutoCloseInputStream(pfd.fileDescriptor)
-                    input.use { inputStream -> inputStream.copyTo(out) }
+                    ParcelFileDescriptor.AutoCloseInputStream(pfd).use { inputStream ->
+                        inputStream.copyTo(out)
+                    }
                 }
                 MediaScannerConnection.scanFile(
                     context,
