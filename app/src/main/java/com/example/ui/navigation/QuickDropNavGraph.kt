@@ -21,6 +21,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.data.model.StorageUsageInfo
 import com.example.data.model.TransferState
 import com.example.ui.components.ConnectionRequestModal
 import com.example.ui.screens.AboutScreen
@@ -126,7 +127,7 @@ fun QuickDropNavGraph(
         ConnectionRequestModal(
             deviceName = requestedState.deviceName,
             fileCount = requestedState.fileCount,
-            totalFormattedSize = viewModel.selectedFilesFormattedSize,
+            totalFormattedSize = StorageUsageInfo.formatBytes(requestedState.totalBytes),
             onAccept = {
                 viewModel.acceptIncomingConnection(requestedState.endpointId)
             },

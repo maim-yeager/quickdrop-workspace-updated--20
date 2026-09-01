@@ -67,7 +67,7 @@ class MediaScanner(private val context: Context) {
             val mimeCol = it.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
             val dateCol = it.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_MODIFIED)
 
-            while (it.moveToNext() && list.size < 100) {
+            while (it.moveToNext()) {
                 val id = it.getLong(idCol)
                 val name = it.getString(nameCol) ?: "Image_$id.jpg"
                 val size = it.getLong(sizeCol)
@@ -118,7 +118,7 @@ class MediaScanner(private val context: Context) {
             val dateCol = it.getColumnIndexOrThrow(MediaStore.Video.Media.DATE_MODIFIED)
             val durationCol = it.getColumnIndex(MediaStore.Video.Media.DURATION)
 
-            while (it.moveToNext() && list.size < 100) {
+            while (it.moveToNext()) {
                 val id = it.getLong(idCol)
                 val name = it.getString(nameCol) ?: "Video_$id.mp4"
                 val size = it.getLong(sizeCol)
@@ -169,7 +169,7 @@ class MediaScanner(private val context: Context) {
             val mimeCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
             val dateCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
 
-            while (it.moveToNext() && list.size < 100) {
+            while (it.moveToNext()) {
                 val id = it.getLong(idCol)
                 val name = it.getString(nameCol) ?: "Audio_$id.mp3"
                 val size = it.getLong(sizeCol)
@@ -220,7 +220,7 @@ class MediaScanner(private val context: Context) {
             val mimeCol = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
             val dateCol = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_MODIFIED)
 
-            while (it.moveToNext() && list.size < 100) {
+            while (it.moveToNext()) {
                 val id = it.getLong(idCol)
                 val name = it.getString(nameCol) ?: "Document_$id.pdf"
                 val size = it.getLong(sizeCol)
@@ -272,7 +272,7 @@ class MediaScanner(private val context: Context) {
             val mimeCol = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
             val dateCol = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_MODIFIED)
 
-            while (it.moveToNext() && list.size < 50) {
+            while (it.moveToNext()) {
                 val id = it.getLong(idCol)
                 val name = it.getString(nameCol) ?: "File_$id"
                 val size = it.getLong(sizeCol)

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.ui.theme.NeonGreen
+import com.example.ui.theme.NeonPink
 import com.example.ui.theme.quickDropColors
 
 @Composable

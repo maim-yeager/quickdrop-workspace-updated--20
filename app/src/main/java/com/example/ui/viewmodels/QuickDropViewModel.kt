@@ -156,16 +156,13 @@ class QuickDropViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         // Log transfers to history when completed
-        nearbyService.onTransferCompletedListener = { targetDevice, isOutgoing, fileCount, totalBytes, durationSeconds ->
+        nearbyService.onTransferCompletedListener = { targetDevice, isOutgoing, fileCount, totalBytes, durationSeconds, fileNames ->
             viewModelScope.launch {
-                // Only outgoing transfers know their real file names (the files the
-                // user picked to send). For incoming transfers we don't currently
-                // track the received file names here, so use an honest generic
-                // label instead of the unrelated "send picker" selection.
-                val names = if (isOutgoing) {
-                    _selectedFiles.value.joinToString(", ") { it.name }.ifEmpty { "Transferred files" }
-                } else {
-                    "$fileCount file${if (fileCount == 1) "" else "s"} received"
+                // Both directions now report their real file names from the
+                // transfer service itself (previously incoming transfers used
+                // an unrelated "send picker" selection).
+                val names = fileNames.joinToString(", ").ifEmpty {
+                    if (isOutgoing) "Transferred files" else "$fileCount file${if (fileCount == 1) "" else "s"} received"
                 }
                 // Real average speed for this transfer, derived from the actual
                 // bytes moved and elapsed time (no more hardcoded placeholder).
@@ -182,6 +179,75 @@ class QuickDropViewModel(application: Application) : AndroidViewModel(applicatio
                         transferSpeedMBps = avgSpeedMBps
                     )
                 )
+            }
+        }
+
+        // Log failed/cancelled transfers too, so history isn't only ever
+        // successes. We only log when a transfer had actually gotten underway
+        // (was Connecting/InProgress) to avoid spurious entries from, say,
+        // the app simply sitting idle.
+        var lastAttemptDeviceName = ""
+        var lastAttemptIsOutgoing = true
+        var lastAttemptFileCount = 0
+        var lastAttemptTotalBytes = 0L
+        var transferWasActive = false
+        viewModelScope.launch {
+            nearbyService.transferState.collect { state ->
+                when (state) {
+                    is TransferState.Connecting -> {
+                        transferWasActive = true
+                        lastAttemptDeviceName = state.device.deviceName
+                        lastAttemptIsOutgoing = true
+                    }
+                    is TransferState.InProgress -> {
+                        transferWasActive = true
+                        lastAttemptDeviceName = state.deviceName
+                        lastAttemptIsOutgoing = state.isOutgoing
+                        lastAttemptFileCount = state.totalFiles
+                        lastAttemptTotalBytes = state.totalBytes
+                    }
+                    is TransferState.Failed -> {
+                        if (transferWasActive) {
+                            transferWasActive = false
+                            repository.insertTransfer(
+                                TransferEntity(
+                                    deviceName = lastAttemptDeviceName.ifBlank { "Unknown Device" },
+                                    isOutgoing = lastAttemptIsOutgoing,
+                                    fileCount = lastAttemptFileCount,
+                                    totalBytes = lastAttemptTotalBytes,
+                                    timestamp = System.currentTimeMillis(),
+                                    status = "FAILED",
+                                    fileNames = state.errorReason.ifBlank { "Transfer failed" },
+                                    transferSpeedMBps = 0.0
+                                )
+                            )
+                        }
+                    }
+                    is TransferState.Cancelled -> {
+                        if (transferWasActive) {
+                            transferWasActive = false
+                            repository.insertTransfer(
+                                TransferEntity(
+                                    deviceName = lastAttemptDeviceName.ifBlank { "Unknown Device" },
+                                    isOutgoing = lastAttemptIsOutgoing,
+                                    fileCount = lastAttemptFileCount,
+                                    totalBytes = lastAttemptTotalBytes,
+                                    timestamp = System.currentTimeMillis(),
+                                    status = "CANCELLED",
+                                    fileNames = "Transfer cancelled",
+                                    transferSpeedMBps = 0.0
+                                )
+                            )
+                        }
+                    }
+                    is TransferState.Completed -> {
+                        // Already logged by onTransferCompletedListener above.
+                        transferWasActive = false
+                    }
+                    else -> {
+                        transferWasActive = false
+                    }
+                }
             }
         }
 

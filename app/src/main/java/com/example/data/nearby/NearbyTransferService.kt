@@ -80,12 +80,13 @@ class NearbyTransferService(
     private var incomingFileName = ""
     private var incomingFileMimeType = "application/octet-stream"
     private var incomingFilesReceived = 0
+    private val receivedFileNames = mutableListOf<String>()
 
     // Ids of payloads that carry actual file bytes (vs metadata)
     private val filePayloadIds = mutableSetOf<Long>()
 
     // Callbacks for UI
-    var onTransferCompletedListener: ((deviceName: String, isOutgoing: Boolean, fileCount: Int, totalBytes: Long, durationSeconds: Long) -> Unit)? = null
+    var onTransferCompletedListener: ((deviceName: String, isOutgoing: Boolean, fileCount: Int, totalBytes: Long, durationSeconds: Long, fileNames: List<String>) -> Unit)? = null
 
     // Files queued locally, sent for real once the outgoing connection is accepted
     private var pendingFilesToSend: List<SharedFile> = emptyList()
@@ -246,6 +247,7 @@ class NearbyTransferService(
                         }
                         bytesCurrentlyTransferred += fileSize
                         incomingFilesReceived += 1
+                        receivedFileNames.add(fileName)
                         currentFileIndex = incomingFilesReceived
                         currentFileName = fileName
                         val elapsedSeconds = ((System.currentTimeMillis() - transferStartTime) / 1000.0).coerceAtLeast(0.1)
@@ -275,7 +277,7 @@ class NearbyTransferService(
                                 totalBytes = finalBytes,
                                 durationSeconds = duration
                             )
-                            onTransferCompletedListener?.invoke(currentConnectedDeviceName, false, incomingFilesReceived, finalBytes, duration)
+                            onTransferCompletedListener?.invoke(currentConnectedDeviceName, false, incomingFilesReceived, finalBytes, duration, receivedFileNames.toList())
                             filePayloadIds.clear()
                         }
                     }
@@ -342,7 +344,7 @@ class NearbyTransferService(
             totalBytes = finalBytes,
             durationSeconds = duration
         )
-        onTransferCompletedListener?.invoke(currentConnectedDeviceName, true, finalFiles, finalBytes, duration)
+        onTransferCompletedListener?.invoke(currentConnectedDeviceName, true, finalFiles, finalBytes, duration, sendFileNames)
         filePayloadIds.clear()
         sendFileNames = emptyList()
     }
@@ -558,6 +560,7 @@ class NearbyTransferService(
         incomingFileName = ""
         incomingFileMimeType = "application/octet-stream"
         incomingFilesReceived = 0
+        receivedFileNames.clear()
         sendFileNames = emptyList()
         filePayloadIds.clear()
         pendingFilesToSend = emptyList()
