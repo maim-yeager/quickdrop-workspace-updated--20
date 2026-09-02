@@ -413,9 +413,15 @@ class NearbyTransferService(
                 Log.d(tag, "Started advertising as $deviceName")
             }.addOnFailureListener { e ->
                 Log.e(tag, "Failed to start advertising", e)
+                _transferState.value = TransferState.Failed(
+                    "Could not start receiving. Make sure Bluetooth and Nearby device permissions are turned on for QuickDrop."
+                )
             }
         } catch (e: Exception) {
             Log.e(tag, "Nearby API advertising error", e)
+            _transferState.value = TransferState.Failed(
+                "Could not start receiving. Make sure Bluetooth and Nearby device permissions are turned on for QuickDrop."
+            )
         }
     }
 
@@ -436,9 +442,15 @@ class NearbyTransferService(
                 Log.d(tag, "Started discovery")
             }.addOnFailureListener { e ->
                 Log.e(tag, "Failed to start discovery", e)
+                _transferState.value = TransferState.Failed(
+                    "Could not search for devices. Make sure Bluetooth, Location and Nearby device permissions are turned on for QuickDrop."
+                )
             }
         } catch (e: Exception) {
             Log.e(tag, "Nearby API discovery error", e)
+            _transferState.value = TransferState.Failed(
+                "Could not search for devices. Make sure Bluetooth, Location and Nearby device permissions are turned on for QuickDrop."
+            )
         }
     }
 
@@ -462,6 +474,9 @@ class NearbyTransferService(
             }
         } catch (e: Exception) {
             Log.e(tag, "Nearby API connect error", e)
+            _transferState.value = TransferState.Failed(
+                "Could not connect to ${device.deviceName}. Make sure Bluetooth and Nearby device permissions are turned on for QuickDrop."
+            )
         }
     }
 
@@ -535,6 +550,7 @@ class NearbyTransferService(
             }
         } catch (e: Exception) {
             Log.e(tag, "Error sending payloads", e)
+            _transferState.value = TransferState.Failed("Could not send the files. Please try again.")
         }
     }
 
