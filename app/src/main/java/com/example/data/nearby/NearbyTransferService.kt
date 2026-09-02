@@ -107,7 +107,12 @@ class NearbyTransferService(
                     isIncoming = true
                 )
             } else {
-                // We initiated this connection; keep waiting for the handshake to complete.
+                // We initiated this connection. Per the Nearby Connections API,
+                // BOTH sides must call acceptConnection() before onConnectionResult()
+                // fires — the receiver accepting alone is not enough. Without this
+                // call the handshake never completes and the UI is stuck on
+                // "Connecting..." forever.
+                connectionsClient.acceptConnection(endpointId, payloadCallback)
                 if (_transferState.value !is TransferState.InProgress) {
                     _transferState.value = TransferState.Connecting(
                         NearbyDevice(
