@@ -84,6 +84,8 @@ class NearbyTransferService(
 
     // Ids of payloads that carry actual file bytes (vs metadata)
     private val filePayloadIds = mutableSetOf<Long>()
+    private val pendingIncomingPayloads = mutableMapOf<Long, Payload>()
+    private val pendingIncomingMeta = mutableMapOf<Long, Pair<String, String>>()
 
     // Callbacks for UI
     var onTransferCompletedListener: ((deviceName: String, isOutgoing: Boolean, fileCount: Int, totalBytes: Long, durationSeconds: Long, fileNames: List<String>) -> Unit)? = null
@@ -162,7 +164,7 @@ class NearbyTransferService(
             Log.d(tag, "Disconnected from $endpointId")
             currentConnectedEndpointId = null
             speedCalculationJob?.cancel()
-            if (_transferState.value is TransferState.InProgress) {
+            if (_transferState.value is TransferState.InProgress || _transferState.value is TransferState.Connecting) {
                 _transferState.value = TransferState.Failed("The device disconnected during the transfer.")
             }
         }
@@ -233,60 +235,20 @@ class NearbyTransferService(
                     Log.e(tag, "Error parsing payload metadata", e)
                 }
             } else if (payload.type == Payload.Type.FILE) {
-                val filePayload = payload.asFile()
                 val fileName = incomingFileName.ifBlank {
                     "Incoming_${System.currentTimeMillis()}"
                 }
                 val mime = incomingFileMimeType
-                val fileSize = filePayload?.size ?: 0L
 
-                // Track this payload so its progress updates count towards the file transfer
+                // NOTE: onPayloadReceived fires as soon as this FILE payload starts
+                // arriving, not when it's finished — the bytes may still be in
+                // transit over the wire. We must NOT read/copy the file here, or
+                // we race the incoming stream and end up saving a truncated file.
+                // Instead, just remember it and do the actual copy once
+                // onPayloadTransferUpdate reports SUCCESS for this payload id.
                 filePayloadIds.add(payload.id)
-
-                // Save the incoming file off the main thread
-                val pfd = filePayload?.asParcelFileDescriptor()
-                if (pfd != null) {
-                    scope.launch {
-                        withContext(Dispatchers.IO) {
-                            saveIncomingFile(pfd, fileName, mime)
-                        }
-                        bytesCurrentlyTransferred += fileSize
-                        incomingFilesReceived += 1
-                        receivedFileNames.add(fileName)
-                        currentFileIndex = incomingFilesReceived
-                        currentFileName = fileName
-                        val elapsedSeconds = ((System.currentTimeMillis() - transferStartTime) / 1000.0).coerceAtLeast(0.1)
-                        val speedMBps = (bytesCurrentlyTransferred / (1024.0 * 1024.0)) / elapsedSeconds
-                        val bytesRemaining = (totalBytesToTransfer - bytesCurrentlyTransferred).coerceAtLeast(0L)
-                        val secondsRemaining = if (speedMBps > 0) (bytesRemaining / (speedMBps * 1024 * 1024)).toLong() else 0L
-
-                        _transferState.value = TransferState.InProgress(
-                            deviceName = currentConnectedDeviceName,
-                            isOutgoing = false,
-                            totalFiles = totalFilesCount.coerceAtLeast(currentFileIndex),
-                            currentFileIndex = currentFileIndex,
-                            currentFileName = currentFileName,
-                            bytesTransferred = bytesCurrentlyTransferred,
-                            totalBytes = totalBytesToTransfer,
-                            speedMBps = speedMBps,
-                            secondsRemaining = secondsRemaining
-                        )
-
-                        if (incomingFilesReceived >= totalFilesCount && totalFilesCount > 0) {
-                            val finalBytes = maxOf(totalBytesToTransfer, bytesCurrentlyTransferred)
-                            val duration = ((System.currentTimeMillis() - transferStartTime) / 1000L).coerceAtLeast(1L)
-                            _transferState.value = TransferState.Completed(
-                                deviceName = currentConnectedDeviceName,
-                                isOutgoing = false,
-                                fileCount = incomingFilesReceived,
-                                totalBytes = finalBytes,
-                                durationSeconds = duration
-                            )
-                            onTransferCompletedListener?.invoke(currentConnectedDeviceName, false, incomingFilesReceived, finalBytes, duration, receivedFileNames.toList())
-                            filePayloadIds.clear()
-                        }
-                    }
-                }
+                pendingIncomingPayloads[payload.id] = payload
+                pendingIncomingMeta[payload.id] = fileName to mime
             }
         }
 
@@ -314,7 +276,6 @@ class NearbyTransferService(
                 }
                 PayloadTransferUpdate.Status.SUCCESS -> {
                     if (update.payloadId in filePayloadIds) {
-                        // One file finished transferring
                         if (sendFileNames.isNotEmpty()) {
                             // Outgoing: advance to the next queued file
                             if (currentFileIndex < totalFilesCount) {
@@ -324,13 +285,69 @@ class NearbyTransferService(
                             if (currentFileIndex >= totalFilesCount && bytesCurrentlyTransferred >= totalBytesToTransfer) {
                                 finishOutgoingTransfer()
                             }
+                        } else {
+                            // Incoming: the payload has now fully arrived on disk —
+                            // safe to copy it into its final destination now.
+                            val filePayload = pendingIncomingPayloads.remove(update.payloadId)
+                            val (fileName, mime) = pendingIncomingMeta.remove(update.payloadId)
+                                ?: (incomingFileName to incomingFileMimeType)
+                            val payloadFile = filePayload?.asFile()
+                            val pfd = payloadFile?.asParcelFileDescriptor()
+                            val fileSize = payloadFile?.size ?: update.totalBytes
+
+                            if (pfd != null) {
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        saveIncomingFile(pfd, fileName, mime)
+                                    }
+                                    bytesCurrentlyTransferred += fileSize
+                                    incomingFilesReceived += 1
+                                    receivedFileNames.add(fileName)
+                                    currentFileIndex = incomingFilesReceived
+                                    currentFileName = fileName
+                                    val elapsedSeconds = ((System.currentTimeMillis() - transferStartTime) / 1000.0).coerceAtLeast(0.1)
+                                    val speedMBps = (bytesCurrentlyTransferred / (1024.0 * 1024.0)) / elapsedSeconds
+                                    val bytesRemaining = (totalBytesToTransfer - bytesCurrentlyTransferred).coerceAtLeast(0L)
+                                    val secondsRemaining = if (speedMBps > 0) (bytesRemaining / (speedMBps * 1024 * 1024)).toLong() else 0L
+
+                                    _transferState.value = TransferState.InProgress(
+                                        deviceName = currentConnectedDeviceName,
+                                        isOutgoing = false,
+                                        totalFiles = totalFilesCount.coerceAtLeast(currentFileIndex),
+                                        currentFileIndex = currentFileIndex,
+                                        currentFileName = currentFileName,
+                                        bytesTransferred = bytesCurrentlyTransferred,
+                                        totalBytes = totalBytesToTransfer,
+                                        speedMBps = speedMBps,
+                                        secondsRemaining = secondsRemaining
+                                    )
+
+                                    if (incomingFilesReceived >= totalFilesCount && totalFilesCount > 0) {
+                                        val finalBytes = maxOf(totalBytesToTransfer, bytesCurrentlyTransferred)
+                                        val duration = ((System.currentTimeMillis() - transferStartTime) / 1000L).coerceAtLeast(1L)
+                                        _transferState.value = TransferState.Completed(
+                                            deviceName = currentConnectedDeviceName,
+                                            isOutgoing = false,
+                                            fileCount = incomingFilesReceived,
+                                            totalBytes = finalBytes,
+                                            durationSeconds = duration
+                                        )
+                                        onTransferCompletedListener?.invoke(currentConnectedDeviceName, false, incomingFilesReceived, finalBytes, duration, receivedFileNames.toList())
+                                        filePayloadIds.clear()
+                                    }
+                                }
+                            }
                         }
                     }
                 }
                 PayloadTransferUpdate.Status.CANCELED -> {
+                    pendingIncomingPayloads.remove(update.payloadId)
+                    pendingIncomingMeta.remove(update.payloadId)
                     _transferState.value = TransferState.Cancelled
                 }
                 PayloadTransferUpdate.Status.FAILURE -> {
+                    pendingIncomingPayloads.remove(update.payloadId)
+                    pendingIncomingMeta.remove(update.payloadId)
                     _transferState.value = TransferState.Failed("Transfer interrupted or failed.")
                 }
             }
@@ -512,19 +529,45 @@ class NearbyTransferService(
     fun sendFiles(endpointId: String, files: List<SharedFile>) {
         if (files.isEmpty()) return
 
+        // Open descriptors for every file up front so the batch metadata we
+        // send reflects only files we can actually transfer. Opening them
+        // lazily inside the loop (after already announcing the full count)
+        // meant a single unreadable file left the receiver waiting forever
+        // for a file that would never arrive, and the transfer never
+        // completed.
+        data class Openable(val file: SharedFile, val pfd: ParcelFileDescriptor)
+        val openable = mutableListOf<Openable>()
+        for (file in files) {
+            try {
+                val pfd = context.contentResolver.openFileDescriptor(file.uri, "r")
+                if (pfd != null) {
+                    openable.add(Openable(file, pfd))
+                } else {
+                    Log.e(tag, "Could not open descriptor for ${file.name}, skipping")
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error opening file descriptor for ${file.name}", e)
+            }
+        }
+
+        if (openable.isEmpty()) {
+            _transferState.value = TransferState.Failed("Could not read the selected file(s). Please try again.")
+            return
+        }
+
         transferStartTime = System.currentTimeMillis()
-        totalFilesCount = files.size
-        totalBytesToTransfer = files.sumOf { it.size }
-        sendFileNames = files.map { it.name }
+        totalFilesCount = openable.size
+        totalBytesToTransfer = openable.sumOf { it.file.size }
+        sendFileNames = openable.map { it.file.name }
         filePayloadIds.clear()
         currentFileIndex = 1
-        currentFileName = files.first().name
+        currentFileName = sendFileNames.first()
 
         // Send metadata payload first
         try {
             val json = JSONObject().apply {
                 put("type", "batch")
-                put("fileCount", files.size)
+                put("fileCount", totalFilesCount)
                 put("totalBytes", totalBytesToTransfer)
                 put("firstFileName", currentFileName)
             }
@@ -532,7 +575,7 @@ class NearbyTransferService(
             connectionsClient.sendPayload(endpointId, metadataPayload)
 
             // Send actual file payloads, each preceded by its own metadata
-            for (file in files) {
+            for ((file, pfd) in openable) {
                 try {
                     val fileMeta = JSONObject().apply {
                         put("type", "file")
@@ -543,14 +586,11 @@ class NearbyTransferService(
                     val metaPayload = Payload.fromBytes(fileMeta.toString().toByteArray(StandardCharsets.UTF_8))
                     connectionsClient.sendPayload(endpointId, metaPayload)
 
-                    val pfd: ParcelFileDescriptor? = context.contentResolver.openFileDescriptor(file.uri, "r")
-                    if (pfd != null) {
-                        val filePayload = Payload.fromFile(pfd)
-                        filePayloadIds.add(filePayload.id)
-                        connectionsClient.sendPayload(endpointId, filePayload)
-                    }
+                    val filePayload = Payload.fromFile(pfd)
+                    filePayloadIds.add(filePayload.id)
+                    connectionsClient.sendPayload(endpointId, filePayload)
                 } catch (e: Exception) {
-                    Log.e(tag, "Error opening file descriptor for ${file.name}", e)
+                    Log.e(tag, "Error sending payload for ${file.name}", e)
                 }
             }
         } catch (e: Exception) {
@@ -584,6 +624,8 @@ class NearbyTransferService(
         receivedFileNames.clear()
         sendFileNames = emptyList()
         filePayloadIds.clear()
+        pendingIncomingPayloads.clear()
+        pendingIncomingMeta.clear()
         pendingFilesToSend = emptyList()
     }
 
